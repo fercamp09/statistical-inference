@@ -1,45 +1,75 @@
 ---
 title: "Simulation Statistical inference"
-autor: "Fernando Campaña"
-
-output: html_notebook
+output:
+  pdf_document: default
+  html_notebook: default
+autor: Fernando Campaña
 ---
 Overview
-In this project I will investigate the exponential distribution in R and compare it with the Central Limit Theorem (CLT). I Should use the knowledge learnt in class to relate the normal and gaussian distributions, using averages of random numbers of thosse distributions. It is divides in two parts.
+In the first part I will investigate the exponential distribution in R and compare it with the Central Limit Theorem (CLT). I Should use the knowledge learnt in class to relate the normal and gaussian distributions, using averages of random numbers of thosse distributions. In the second part I will perform a basic inferential data analysis.
 
-Part 1: Simulation Exercise Instructions
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
-
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
-
+# Part 1: Simulation Exercise 
+For this simulation exercise, we first start loading libraries and initializing variables, setting lambda to 0.2 and n to 40. Then we compute 1000 random exponentials and save it as a vector into dexp variable. Also, we run simulations of the means of 40 exponentials, 1000 times.
 ```{r}
-hist(runif(1000))
-```
-
-```{r}
+library(knitr)
+lambda <- 0.2
+n <- 40
+total <- data.frame(estimator=character(), theoretical=numeric(), sample=numeric(), sample_means=numeric())
+# 1000 exponentials
+dexp <- rexp(1000, lambda)
+# 1000 simulations of the mean of 40 exponentials
 mns = NULL
-for (i in 1 : 1000) mns = c(mns, mean(runif(40)))
-hist(mns)
+for (i in 1 : 1000) mns = c(mns, mean(rexp(n, lambda)))
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+With our values computed and stored, we can proceed to compute the mean.
+```{r}
+# Compute mean
+theorethical_mean <- 1/lambda
+sample_mean <- mean(dexp)
+sample_means_1000mean <- mean(mns)
+new_row <- data.frame("Mean", theorethical_mean, sample_mean, sample_means_1000mean)
+names(new_row) <- c("estimator", "theoretical", "sample", "sample_means" )
+total <- rbind(total, new_row)
+kable(total, caption="Theoretical vs sample mean")
+```
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+We can see that the sample mean is almost near the theoretical mean. But as the number of values increases, the mean gets closer to the asympthotic representing the theorethical mean. The sample means of the means of 1000 simulations, is even closer.
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+```{r}
+cum <- cumsum(rexp(1000, lambda))/(1:1000)
+plot(cum, type="l", xlab = "Accumulated values", ylab = "mean")
+abline(h=theorethical_mean, col="blue")
+```
 
-Part 2: Basic Inferential Data Analysis Instructions
+```{r}
+theorethical_sd <- 1/lambda
+sample_sd <- sd(dexp)
+sample_means_1000sd <- sd(mns)
+new_row <- data.frame("Standard deviation", theorethical_sd, sample_sd, sample_means_1000sd)
+names(new_row) <- c("estimator", "theoretical", "sample", "sample_means")
+total <- rbind(total, new_row)
+theorethical_var <- theorethical_sd^2
+sample_var <- var(dexp)
+sample_means_1000var <- var(mns)
+new_row <- data.frame("Variance", theorethical_var, sample_var, sample_means_1000var)
+names(new_row) <- c("estimator", "theoretical", "sample", "sample_means")
+total <- rbind(total, new_row)
+kable(total, caption="Theoretical vs sample")
+```
 
-Simulations: Include English explanations of the simulations you ran, with the accompanying R code. Your explanations should make clear what the R code accomplishes.
-Sample Mean versus Theoretical Mean: Include figures with titles. In the figures, highlight the means you are comparing. Include text that explains the figures and what is shown on them, and provides appropriate numbers.
-Sample Variance versus Theoretical Variance: Include figures (output from R) with titles. Highlight the variances you are comparing. Include text that explains your understanding of the differences of the variances.
-Distribution: Via figures and text, explain how one can tell the distribution is approximately normal.
+Then calculating the standard deviation and variance, shows the theoretical and sample mean are very close, given the high number of values accumulated. While the variance of the means of 1000 simulations is different, due to it being converted into a standard normal, as the two following figures shows. This shows what the CLT states that the distribution of iid variables becomes that of a standard normal as the sample size increase.
+
+```{r}
+hist(dexp,  main = 'rexp(1000, 0.2)')
+```
 
 
-Review criteria
-    Did you show where the distribution is centered at and compare it to the theoretical center of the distribution?
-    Did you show how variable it is and compare it to the theoretical variance of the distribution?
-    Did you perform an exploratory data analysis of at least a single plot or table highlighting basic features of the data?
-    Did the student perform some relevant confidence intervals and/or tests?
-    Were the results of the tests and/or intervals interpreted in the context of the problem correctly?
-    Did the student describe the assumptions needed for their conclusions? readRDS(file, refhook = NULL) 
+```{r}
+h <- hist(mns, main = '1000 simulations of the means of 40 random exponential')
+xfit <- seq(min(mns), max(mns), length = 40) 
+yfit <- dnorm(xfit, mean = mean(mns), sd = sd(mns)) 
+yfit <- yfit * diff(h$mids[1:2]) * length(mns) 
+lines(xfit, yfit, col = "blue", lwd = 2)
+```
+
